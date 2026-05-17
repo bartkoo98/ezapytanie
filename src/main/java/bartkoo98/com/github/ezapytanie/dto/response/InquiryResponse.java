@@ -23,6 +23,8 @@ public class InquiryResponse {
     private InquiryStatus status;
     private Instant deadline;
     private List<String> invitedContractorIds;
+    private String winnerOfferId;
+    private String cancellationReason;
     private Instant createdAt;
     private Instant updatedAt;
 }

@@ -1,8 +1,11 @@
 package bartkoo98.com.github.ezapytanie.controller;
 
+import bartkoo98.com.github.ezapytanie.dto.request.CancelInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.request.CreateInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.InquiryResponse;
+import bartkoo98.com.github.ezapytanie.dto.response.OfferResponse;
 import bartkoo98.com.github.ezapytanie.service.InquiryService;
+import bartkoo98.com.github.ezapytanie.service.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +27,7 @@ import java.util.List;
 public class InquiryController {
 
     private final InquiryService inquiryService;
+    private final OfferService offerService;
 
     @PostMapping
     @PreAuthorize("hasRole('CLIENT')")
@@ -40,30 +44,39 @@ public class InquiryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN', 'CONTRACTOR')")
     public ResponseEntity<List<InquiryResponse>> list() {
         return ResponseEntity.ok(inquiryService.list());
     }
 
-    @PatchMapping("/{inquiryId}/publish")
+    @GetMapping("/{inquiryId}")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN', 'CONTRACTOR')")
+    public ResponseEntity<InquiryResponse> getById(@PathVariable String inquiryId) {
+        return ResponseEntity.ok(inquiryService.getById(inquiryId));
+    }
+
+    @PatchMapping("/{inquiryId}/cancel")
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<InquiryResponse> publish(
+    public ResponseEntity<InquiryResponse> cancel(
             @PathVariable String inquiryId,
+            @Valid @RequestBody CancelInquiryRequest request,
             HttpServletRequest httpRequest) {
 
-        InquiryResponse updated = inquiryService.publish(
+        InquiryResponse updated = inquiryService.cancel(
                 inquiryId,
+                request,
                 httpRequest.getRemoteAddr(),
                 httpRequest.getHeader("User-Agent")
         );
         return ResponseEntity.ok(updated);
     }
 
-    /**
-     * Accepts one offer for an inquiry, rejects all others, and closes the inquiry.
-     * Role-level check (@PreAuthorize) gates entry; ownership check inside the service
-     * prevents one CLIENT from closing another's inquiry.
-     */
+    @GetMapping("/{inquiryId}/offers")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN', 'CONTRACTOR')")
+    public ResponseEntity<List<OfferResponse>> listOffers(@PathVariable String inquiryId) {
+        return ResponseEntity.ok(offerService.listForInquiry(inquiryId));
+    }
+
     @PatchMapping("/{inquiryId}/accept-offer/{offerId}")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<InquiryResponse> acceptOffer(

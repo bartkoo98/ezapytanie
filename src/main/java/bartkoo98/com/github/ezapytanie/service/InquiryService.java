@@ -1,5 +1,6 @@
 package bartkoo98.com.github.ezapytanie.service;
 
+import bartkoo98.com.github.ezapytanie.dto.request.CancelInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.request.CreateInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.InquiryResponse;
 import bartkoo98.com.github.ezapytanie.enums.InquiryStatus;
@@ -38,7 +39,7 @@ public class InquiryService {
                 .description(request.getDescription())
                 .category(request.getCategory())
                 .deadline(request.getDeadline())
-                .status(InquiryStatus.DRAFT)
+                .status(InquiryStatus.PUBLISHED)
                 .clientId(principal.getUserId())
                 .build();
 
@@ -62,19 +63,42 @@ public class InquiryService {
     public List<InquiryResponse> list() {
         CustomUserDetails principal = getCurrentPrincipal();
 
-        List<Inquiry> inquiries = principal.getUserRole() == UserRole.ADMIN
-                ? inquiryRepository.findAll()
-                : inquiryRepository.findByClientId(principal.getUserId());
+        List<Inquiry> inquiries = switch (principal.getUserRole()) {
+            case ADMIN -> inquiryRepository.findAll();
+            case CLIENT -> inquiryRepository.findByClientId(principal.getUserId());
+            case CONTRACTOR -> inquiryRepository.findByStatus(InquiryStatus.PUBLISHED);
+        };
 
         return inquiries.stream().map(this::toResponse).toList();
     }
 
-    /**
-     * Transitions an inquiry from DRAFT to PUBLISHED, making it visible to contractors.
-     * Only the owning CLIENT can publish their own inquiry.
-     */
+    public InquiryResponse getById(String inquiryId) {
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Inquiry not found: " + inquiryId));
+
+        CustomUserDetails principal = getCurrentPrincipal();
+
+        switch (principal.getUserRole()) {
+            case ADMIN -> { /* full access */ }
+            case CLIENT -> {
+                if (!inquiry.getClientId().equals(principal.getUserId())) {
+                    throw new AccessDeniedException("You are not the owner of inquiry: " + inquiryId);
+                }
+            }
+            case CONTRACTOR -> {
+                if (inquiry.getStatus() != InquiryStatus.PUBLISHED) {
+                    throw new AccessDeniedException("Inquiry is not available: " + inquiryId);
+                }
+            }
+        }
+
+        return toResponse(inquiry);
+    }
+
     @Transactional
-    public InquiryResponse publish(String inquiryId, String ipAddress, String userAgent) {
+    public InquiryResponse cancel(String inquiryId, CancelInquiryRequest request,
+                                  String ipAddress, String userAgent) {
+
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inquiry not found: " + inquiryId));
 
@@ -83,21 +107,29 @@ public class InquiryService {
             throw new AccessDeniedException("You are not the owner of inquiry: " + inquiryId);
         }
 
-        if (inquiry.getStatus() != InquiryStatus.DRAFT) {
-            throw new InvalidInquiryStateException(inquiryId, inquiry.getStatus(), InquiryStatus.DRAFT);
+        if (inquiry.getStatus() != InquiryStatus.PUBLISHED) {
+            throw new InvalidInquiryStateException(inquiryId, inquiry.getStatus(), InquiryStatus.PUBLISHED);
         }
 
-        inquiry.setStatus(InquiryStatus.PUBLISHED);
+        List<Offer> submittedOffers = offerRepository.findByInquiryId(inquiryId).stream()
+                .filter(o -> o.getStatus() == OfferStatus.SUBMITTED)
+                .toList();
+        submittedOffers.forEach(o -> o.setStatus(OfferStatus.REJECTED));
+        offerRepository.saveAll(submittedOffers);
+
+        inquiry.setStatus(InquiryStatus.CANCELLED);
+        inquiry.setCancellationReason(request.getCancellationReason());
         Inquiry saved = inquiryRepository.save(inquiry);
 
         auditLogService.log(
                 principal.getUserId(),
                 principal.getUserRole().name(),
                 principal.getUsername(),
-                "INQUIRY_PUBLISHED",
+                "INQUIRY_CANCELLED",
                 "INQUIRY",
                 saved.getId(),
-                Map.of("title", saved.getTitle()),
+                Map.of("reason", request.getCancellationReason(),
+                        "rejectedOfferCount", String.valueOf(submittedOffers.size())),
                 ipAddress,
                 userAgent
         );
@@ -137,7 +169,7 @@ public class InquiryService {
                     "Offer " + offerId + " does not belong to inquiry " + inquiryId);
         }
 
-        offer.setStatus(OfferStatus.ACCEPTED);
+        offer.setStatus(OfferStatus.SELECTED);
         offerRepository.save(offer);
 
         List<Offer> otherOffers = offerRepository.findByInquiryId(inquiryId).stream()
@@ -147,6 +179,7 @@ public class InquiryService {
         offerRepository.saveAll(otherOffers);
 
         inquiry.setStatus(InquiryStatus.CLOSED);
+        inquiry.setWinnerOfferId(offerId);
         Inquiry saved = inquiryRepository.save(inquiry);
 
         String actorId = principal.getUserId();
@@ -155,15 +188,15 @@ public class InquiryService {
 
         auditLogService.log(
                 actorId, actorRole, actorEmail,
-                "OFFER_ACCEPTED", "OFFER", offerId,
-                Map.of("inquiryId", inquiryId, "acceptedOfferId", offerId),
+                "OFFER_SELECTED", "OFFER", offerId,
+                Map.of("inquiryId", inquiryId, "selectedOfferId", offerId),
                 ipAddress, userAgent
         );
 
         auditLogService.log(
                 actorId, actorRole, actorEmail,
                 "INQUIRY_CLOSED", "INQUIRY", inquiryId,
-                Map.of("acceptedOfferId", offerId,
+                Map.of("winnerOfferId", offerId,
                         "rejectedOfferCount", String.valueOf(otherOffers.size())),
                 ipAddress, userAgent
         );
@@ -186,6 +219,8 @@ public class InquiryService {
                 .status(inquiry.getStatus())
                 .deadline(inquiry.getDeadline())
                 .invitedContractorIds(inquiry.getInvitedContractorIds())
+                .winnerOfferId(inquiry.getWinnerOfferId())
+                .cancellationReason(inquiry.getCancellationReason())
                 .createdAt(inquiry.getCreatedAt())
                 .updatedAt(inquiry.getUpdatedAt())
                 .build();

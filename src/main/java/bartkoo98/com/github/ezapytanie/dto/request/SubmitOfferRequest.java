@@ -1,11 +1,13 @@
 package bartkoo98.com.github.ezapytanie.dto.request;
 
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Data
 public class SubmitOfferRequest {
@@ -14,9 +16,13 @@ public class SubmitOfferRequest {
     private String inquiryId;
 
     @NotNull
-    @Positive(message = "Total price must be greater than zero")
-    private BigDecimal totalPrice;
+    @Positive(message = "Price must be greater than zero")
+    private BigDecimal price;
 
     @NotBlank
-    private String message;
+    private String notes;
+
+    @NotNull
+    @Future(message = "Offer validity date must be in the future")
+    private Instant validUntil;
 }

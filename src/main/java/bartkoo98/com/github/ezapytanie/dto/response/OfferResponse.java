@@ -18,8 +18,12 @@ public class OfferResponse {
     private String id;
     private String inquiryId;
     private String contractorId;
-    private BigDecimal totalPrice;
-    private String message;
+    private String contractorName;
+    private BigDecimal price;
+    private String currency;
+    private String notes;
+    private Instant validUntil;
     private OfferStatus status;
     private Instant submittedAt;
+    private Instant updatedAt;
 }

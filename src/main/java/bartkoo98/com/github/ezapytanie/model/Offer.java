@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
-import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.mapping.FieldType;
@@ -36,12 +36,21 @@ public class Offer {
     @Indexed
     private String contractorId;
 
-    @Field(targetType = FieldType.DECIMAL128)
-    private BigDecimal totalPrice;
+    private String contractorName;
 
-    private String message;
+    @Field(targetType = FieldType.DECIMAL128)
+    private BigDecimal price;
+
+    @Builder.Default
+    private String currency = "PLN";
+
+    private String notes;
+
+    private Instant validUntil;
 
     private OfferStatus status;
+
+    private String withdrawalReason;
 
     @CreatedDate
     private Instant submittedAt;
