@@ -3,7 +3,7 @@ version: '3.9'
 services:
   backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
     container_name: ezapytanie-api
     restart: unless-stopped
