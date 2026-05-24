@@ -39,16 +39,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    listInquiries()
-      .then(setInquiries)
+    listInquiries(0, 5)
+      .then((data) => setInquiries(data.content))
       .finally(() => setLoading(false));
   }, []);
 
-  const active = inquiries.filter((i) => i.status === 'PUBLISHED').length;
-
-  const recent = [...inquiries]
-    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    .slice(0, 5);
+  const recent = inquiries;
 
   const displayName = user?.institutionName || user?.email || '';
 
@@ -56,9 +52,6 @@ export default function DashboardPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Witaj, {displayName}</h1>
-        {active > 0 && (
-          <p className="mt-1 text-sm text-gray-500">Aktywne zapytania: {active}</p>
-        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">

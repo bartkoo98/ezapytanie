@@ -3,6 +3,7 @@ package bartkoo98.com.github.ezapytanie.service;
 import bartkoo98.com.github.ezapytanie.dto.request.CancelInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.request.CreateInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.InquiryResponse;
+import bartkoo98.com.github.ezapytanie.dto.response.PageResponse;
 import bartkoo98.com.github.ezapytanie.enums.InquiryStatus;
 import bartkoo98.com.github.ezapytanie.enums.OfferStatus;
 import bartkoo98.com.github.ezapytanie.enums.UserRole;
@@ -14,6 +15,8 @@ import bartkoo98.com.github.ezapytanie.repository.InquiryRepository;
 import bartkoo98.com.github.ezapytanie.repository.OfferRepository;
 import bartkoo98.com.github.ezapytanie.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -60,18 +63,20 @@ public class InquiryService {
         return toResponse(saved, true);
     }
 
-    public List<InquiryResponse> list() {
+    public PageResponse<InquiryResponse> list(Pageable pageable) {
         CustomUserDetails principal = getCurrentPrincipal();
 
-        List<Inquiry> inquiries = switch (principal.getUserRole()) {
-            case ADMIN -> inquiryRepository.findAll();
-            case CLIENT -> inquiryRepository.findByClientId(principal.getUserId());
+        Page<Inquiry> inquiryPage = switch (principal.getUserRole()) {
+            case ADMIN -> inquiryRepository.findAll(pageable);
+            case CLIENT -> inquiryRepository.findByClientId(principal.getUserId(), pageable);
             case CONTRACTOR -> inquiryRepository.findByStatusIn(
-                    List.of(InquiryStatus.PUBLISHED, InquiryStatus.CLOSED, InquiryStatus.ARCHIVED));
+                    List.of(InquiryStatus.PUBLISHED, InquiryStatus.CLOSED, InquiryStatus.ARCHIVED), pageable);
         };
 
         boolean includeJustification = principal.getUserRole() != UserRole.CONTRACTOR;
-        return inquiries.stream().map(i -> toResponse(i, includeJustification)).toList();
+        List<InquiryResponse> content = inquiryPage.getContent().stream()
+                .map(i -> toResponse(i, includeJustification)).toList();
+        return new PageResponse<>(content, inquiryPage.getNumber(), inquiryPage.getTotalPages(), inquiryPage.getTotalElements());
     }
 
     public InquiryResponse getById(String inquiryId) {
