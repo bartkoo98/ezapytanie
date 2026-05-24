@@ -7,10 +7,11 @@ import type {
   InquiryQuestionResponse,
   AskQuestionRequest,
   AnswerQuestionRequest,
+  PageResponse,
 } from '../types/api';
 
-export const listInquiries = () =>
-  api.get<InquiryResponse[]>('/inquiries').then((r) => r.data);
+export const listInquiries = (page = 0, size = 10) =>
+  api.get<PageResponse<InquiryResponse>>('/inquiries', { params: { page, size } }).then((r) => r.data);
 
 export const getInquiry = (id: string) =>
   api.get<InquiryResponse>(`/inquiries/${id}`).then((r) => r.data);

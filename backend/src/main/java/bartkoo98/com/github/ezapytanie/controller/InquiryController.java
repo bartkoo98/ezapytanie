@@ -8,12 +8,15 @@ import bartkoo98.com.github.ezapytanie.dto.request.CreateInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.InquiryQuestionResponse;
 import bartkoo98.com.github.ezapytanie.dto.response.InquiryResponse;
 import bartkoo98.com.github.ezapytanie.dto.response.OfferResponse;
+import bartkoo98.com.github.ezapytanie.dto.response.PageResponse;
 import bartkoo98.com.github.ezapytanie.service.InquiryQuestionService;
 import bartkoo98.com.github.ezapytanie.service.InquiryService;
 import bartkoo98.com.github.ezapytanie.service.OfferService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -52,8 +56,11 @@ public class InquiryController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('CLIENT', 'ADMIN', 'CONTRACTOR')")
-    public ResponseEntity<List<InquiryResponse>> list() {
-        return ResponseEntity.ok(inquiryService.list());
+    public ResponseEntity<PageResponse<InquiryResponse>> list(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        var pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return ResponseEntity.ok(inquiryService.list(pageable));
     }
 
     @GetMapping("/{inquiryId}")

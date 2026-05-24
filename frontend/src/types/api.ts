@@ -113,6 +113,13 @@ export interface AuditLog {
   userAgent: string;
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  page: number;
+  totalPages: number;
+  totalElements: number;
+}
+
 export interface ErrorResponse {
   code: string;
   message: string;

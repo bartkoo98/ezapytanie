@@ -149,12 +149,20 @@ export default function InquiryListPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<InquiryStatus | 'ALL'>('ALL');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
 
   useEffect(() => {
-    listInquiries()
-      .then(setInquiries)
+    setLoading(true);
+    listInquiries(currentPage)
+      .then((data) => {
+        setInquiries(data.content);
+        setTotalPages(data.totalPages);
+        setTotalElements(data.totalElements);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  }, [currentPage]);
 
   const filtered = inquiries.filter((i) => {
     const matchesStatus = statusFilter === 'ALL' || i.status === statusFilter;
@@ -170,6 +178,11 @@ export default function InquiryListPage() {
     setShowCreateModal(false);
   };
 
+  const handleStatusFilter = (value: InquiryStatus | 'ALL') => {
+    setStatusFilter(value);
+    setCurrentPage(0);
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-5">
       {showCreateModal && (
@@ -182,7 +195,7 @@ export default function InquiryListPage() {
             {user?.role === 'CONTRACTOR' ? 'Dostępne zapytania' : 'Moje zapytania'}
           </h1>
           <p className="text-sm text-gray-400">
-            {filtered.length} z {inquiries.length} postępowań
+            {totalElements} postępowań
           </p>
         </div>
         {user?.role === 'CLIENT' && (
@@ -211,7 +224,7 @@ export default function InquiryListPage() {
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
-              onClick={() => setStatusFilter(f.value)}
+              onClick={() => handleStatusFilter(f.value)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 statusFilter === f.value
                   ? 'bg-blue-600 text-white'
@@ -288,6 +301,27 @@ export default function InquiryListPage() {
               ))}
             </tbody>
           </table>
+        )}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-100">
+            <button
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage(currentPage - 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg"
+            >
+              Poprzednia
+            </button>
+            <span className="text-sm text-gray-500">
+              Strona {currentPage + 1} z {totalPages}
+            </span>
+            <button
+              disabled={currentPage >= totalPages - 1}
+              onClick={() => setCurrentPage(currentPage + 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg"
+            >
+              Następna
+            </button>
+          </div>
         )}
       </div>
     </div>
