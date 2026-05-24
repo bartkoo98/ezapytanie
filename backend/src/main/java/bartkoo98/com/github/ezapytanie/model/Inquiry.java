@@ -26,6 +26,8 @@ public class Inquiry {
     private String title;
     private String description;
     private String category;
+    private String deliveryLocation;
+    private String termsAndConditions;
 
     @Indexed
     private String clientId;

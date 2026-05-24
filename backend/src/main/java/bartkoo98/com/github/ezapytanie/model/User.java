@@ -29,6 +29,7 @@ public class User {
     private String passwordHash;
     private String fullName;
     private String institutionName;
+    private CompanyDetails companyDetails;
     private UserRole role;
 
     @Builder.Default

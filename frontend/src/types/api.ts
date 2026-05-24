@@ -2,6 +2,14 @@ export type UserRole = 'ADMIN' | 'CLIENT' | 'CONTRACTOR';
 export type InquiryStatus = 'PUBLISHED' | 'CLOSED' | 'CANCELLED' | 'ARCHIVED';
 export type OfferStatus = 'SUBMITTED' | 'WITHDRAWN' | 'SELECTED' | 'REJECTED';
 
+export interface CompanyDetails {
+  nip: string | null;
+  regon: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  address: string | null;
+}
+
 export interface LoginRequest {
   email: string;
   password: string;
@@ -13,6 +21,11 @@ export interface RegisterRequest {
   fullName: string;
   institutionName: string;
   role: UserRole;
+  nip: string;
+  regon: string;
+  contactPhone: string;
+  contactEmail: string;
+  address: string;
 }
 
 export interface LoginResponse {
@@ -24,6 +37,7 @@ export interface LoginResponse {
   role: UserRole;
   fullName: string;
   institutionName: string;
+  companyDetails: CompanyDetails | null;
 }
 
 export interface InquiryResponse {
@@ -31,6 +45,8 @@ export interface InquiryResponse {
   title: string;
   description: string;
   category: string;
+  deliveryLocation: string | null;
+  termsAndConditions: string | null;
   clientId: string;
   status: InquiryStatus;
   deadline: string;
@@ -61,6 +77,8 @@ export interface CreateInquiryRequest {
   title: string;
   description: string;
   category: string;
+  deliveryLocation?: string;
+  termsAndConditions?: string;
   deadline: string;
 }
 
@@ -74,6 +92,8 @@ export interface OfferResponse {
   inquiryTitle: string;
   contractorId: string;
   contractorName: string | null;
+  contractorInstitutionName: string | null;
+  contractorCompanyDetails: CompanyDetails | null;
   price: number | null;
   currency: string | null;
   notes: string | null;
@@ -93,6 +113,7 @@ export interface UserResponse {
   email: string;
   fullName: string;
   institutionName: string;
+  companyDetails: CompanyDetails | null;
   role: UserRole;
   active: boolean;
   createdAt: string;

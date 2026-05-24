@@ -11,6 +11,13 @@ export default function RegisterPage() {
   const [institutionName, setInstitutionName] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<UserRole>('CLIENT');
+
+  const [nip, setNip] = useState('');
+  const [regon, setRegon] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [address, setAddress] = useState('');
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,7 +27,18 @@ export default function RegisterPage() {
     setError('');
     setLoading(true);
     try {
-      await register({ fullName, email, institutionName, password, role });
+      await register({
+        fullName,
+        email,
+        institutionName,
+        password,
+        role,
+        nip,
+        regon,
+        contactPhone,
+        contactEmail,
+        address,
+      });
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2000);
     } catch (err: unknown) {
@@ -33,7 +51,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">
             <span className="text-blue-600">e</span>
@@ -106,7 +124,77 @@ export default function RegisterPage() {
               </select>
             </div>
 
-            <div>
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Dane firmy</p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">NIP</label>
+                  <input
+                    type="text"
+                    required
+                    minLength={10}
+                    maxLength={10}
+                    value={nip}
+                    onChange={(e) => setNip(e.target.value)}
+                    placeholder="0000000000"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">REGON</label>
+                  <input
+                    type="text"
+                    required
+                    minLength={9}
+                    maxLength={14}
+                    value={regon}
+                    onChange={(e) => setRegon(e.target.value)}
+                    placeholder="000000000"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
+                  <input
+                    type="tel"
+                    required
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="+48 000 000 000"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email kontaktowy</label>
+                  <input
+                    type="email"
+                    required
+                    value={contactEmail}
+                    onChange={(e) => setContactEmail(e.target.value)}
+                    placeholder="kontakt@firma.pl"
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Adres siedziby</label>
+                <input
+                  type="text"
+                  required
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="ul. Przykładowa 1, 00-001 Warszawa"
+                  className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="border-t border-gray-100 pt-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">Hasło</label>
               <input
                 type="password"

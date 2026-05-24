@@ -5,6 +5,7 @@ import bartkoo98.com.github.ezapytanie.dto.request.RegisterRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.LoginResponse;
 import bartkoo98.com.github.ezapytanie.exception.EmailAlreadyExistsException;
 import bartkoo98.com.github.ezapytanie.exception.InvalidCredentialsException;
+import bartkoo98.com.github.ezapytanie.model.CompanyDetails;
 import bartkoo98.com.github.ezapytanie.model.User;
 import bartkoo98.com.github.ezapytanie.repository.UserRepository;
 import bartkoo98.com.github.ezapytanie.security.JwtTokenProvider;
@@ -33,11 +34,20 @@ public class AuthService {
             throw new EmailAlreadyExistsException(request.getEmail());
         }
 
+        CompanyDetails companyDetails = CompanyDetails.builder()
+                .nip(request.getNip())
+                .regon(request.getRegon())
+                .contactPhone(request.getContactPhone())
+                .contactEmail(request.getContactEmail())
+                .address(request.getAddress())
+                .build();
+
         User user = User.builder()
                 .email(request.getEmail())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .fullName(request.getFullName())
                 .institutionName(request.getInstitutionName())
+                .companyDetails(companyDetails)
                 .role(request.getRole())
                 .active(true)
                 .build();
@@ -102,6 +112,7 @@ public class AuthService {
                 .role(user.getRole().name())
                 .fullName(user.getFullName())
                 .institutionName(user.getInstitutionName())
+                .companyDetails(user.getCompanyDetails())
                 .build();
     }
 }
