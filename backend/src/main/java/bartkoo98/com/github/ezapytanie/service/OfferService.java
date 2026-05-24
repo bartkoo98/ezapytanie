@@ -11,8 +11,10 @@ import bartkoo98.com.github.ezapytanie.exception.ResourceNotFoundException;
 import bartkoo98.com.github.ezapytanie.mapper.OfferResponseMapper;
 import bartkoo98.com.github.ezapytanie.model.Inquiry;
 import bartkoo98.com.github.ezapytanie.model.Offer;
+import bartkoo98.com.github.ezapytanie.model.User;
 import bartkoo98.com.github.ezapytanie.repository.InquiryRepository;
 import bartkoo98.com.github.ezapytanie.repository.OfferRepository;
+import bartkoo98.com.github.ezapytanie.repository.UserRepository;
 import bartkoo98.com.github.ezapytanie.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -20,6 +22,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +34,7 @@ public class OfferService {
 
     private final OfferRepository offerRepository;
     private final InquiryRepository inquiryRepository;
+    private final UserRepository userRepository;
     private final AuditLogService auditLogService;
     private final OfferResponseMapper mapper;
 
@@ -84,27 +88,42 @@ public class OfferService {
         CustomUserDetails principal = getCurrentPrincipal();
 
         return switch (principal.getUserRole()) {
-            case ADMIN -> offerRepository.findByInquiryId(inquiryId).stream()
-                    .map(o -> mapper.toResponse(o, true, inquiry.getTitle()))
-                    .toList();
+            case ADMIN -> {
+                List<Offer> offers = offerRepository.findByInquiryId(inquiryId);
+                Map<String, User> contractorById = fetchContractorMap(offers);
+                yield offers.stream()
+                        .map(o -> mapper.toResponse(o, true, inquiry.getTitle(), contractorById.get(o.getContractorId())))
+                        .toList();
+            }
 
             case CLIENT -> {
                 if (!inquiry.getClientId().equals(principal.getUserId())) {
                     throw new AccessDeniedException("You are not the owner of inquiry: " + inquiryId);
                 }
-                // Sealed while PUBLISHED; revealed once closed/cancelled/archived
-                yield offerRepository.findByInquiryId(inquiryId).stream()
-                        .map(o -> mapper.toResponse(o, inquiry))
+                List<Offer> offers = offerRepository.findByInquiryId(inquiryId);
+                boolean revealed = inquiry.getStatus() != InquiryStatus.PUBLISHED;
+                Map<String, User> contractorById = revealed ? fetchContractorMap(offers) : new HashMap<>();
+                yield offers.stream()
+                        .map(o -> mapper.toResponse(o, revealed, inquiry.getTitle(), contractorById.get(o.getContractorId())))
                         .toList();
             }
 
             case CONTRACTOR -> {
+                String myId = principal.getUserId();
                 yield offerRepository.findByInquiryId(inquiryId).stream()
-                        .filter(o -> o.getContractorId().equals(principal.getUserId()))
-                        .map(o -> mapper.toResponse(o, true, inquiry.getTitle()))
+                        .map(o -> o.getContractorId().equals(myId)
+                                ? mapper.toResponse(o, true, inquiry.getTitle())
+                                : mapper.toMaskedCompetitorResponse(o, inquiry.getTitle()))
                         .toList();
             }
         };
+    }
+
+    private Map<String, User> fetchContractorMap(List<Offer> offers) {
+        Set<String> ids = offers.stream().map(Offer::getContractorId).collect(Collectors.toSet());
+        Map<String, User> result = new HashMap<>();
+        userRepository.findAllById(ids).forEach(u -> result.put(u.getId(), u));
+        return result;
     }
 
     public List<OfferResponse> listMine() {

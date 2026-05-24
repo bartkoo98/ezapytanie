@@ -1,6 +1,7 @@
 package bartkoo98.com.github.ezapytanie.dto.response;
 
 import bartkoo98.com.github.ezapytanie.enums.UserRole;
+import bartkoo98.com.github.ezapytanie.model.CompanyDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class UserResponse {
     private String email;
     private String fullName;
     private String institutionName;
+    private CompanyDetails companyDetails;
     private UserRole role;
     private boolean active;
     private Instant createdAt;

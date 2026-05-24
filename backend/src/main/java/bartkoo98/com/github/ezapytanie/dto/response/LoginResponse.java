@@ -1,5 +1,6 @@
 package bartkoo98.com.github.ezapytanie.dto.response;
 
+import bartkoo98.com.github.ezapytanie.model.CompanyDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,9 +18,10 @@ public class LoginResponse {
     @Builder.Default
     private String tokenType = "Bearer";
 
-    private long expiresIn;  // seconds until access token expires
+    private long expiresIn;
     private String email;
     private String role;
     private String fullName;
     private String institutionName;
+    private CompanyDetails companyDetails;
 }

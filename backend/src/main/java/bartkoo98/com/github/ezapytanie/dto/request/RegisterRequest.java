@@ -26,4 +26,22 @@ public class RegisterRequest {
 
     @NotNull
     private UserRole role;
+
+    @NotBlank
+    @Size(min = 10, max = 10, message = "NIP musi mieć dokładnie 10 cyfr")
+    private String nip;
+
+    @NotBlank
+    @Size(min = 9, max = 14, message = "REGON musi mieć 9 lub 14 cyfr")
+    private String regon;
+
+    @NotBlank
+    private String contactPhone;
+
+    @NotBlank
+    @Email
+    private String contactEmail;
+
+    @NotBlank
+    private String address;
 }

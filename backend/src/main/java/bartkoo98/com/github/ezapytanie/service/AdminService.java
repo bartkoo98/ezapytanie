@@ -58,6 +58,7 @@ public class AdminService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .institutionName(user.getInstitutionName())
+                .companyDetails(user.getCompanyDetails())
                 .role(user.getRole())
                 .active(user.isActive())
                 .createdAt(user.getCreatedAt())

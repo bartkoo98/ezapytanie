@@ -19,6 +19,10 @@ public class CreateInquiryRequest {
     @NotBlank
     private String category;
 
+    private String deliveryLocation;
+
+    private String termsAndConditions;
+
     @NotNull
     @Future(message = "Deadline must be a future date")
     private Instant deadline;

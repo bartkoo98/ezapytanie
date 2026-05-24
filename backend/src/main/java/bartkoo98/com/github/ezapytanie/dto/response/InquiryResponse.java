@@ -18,6 +18,8 @@ public class InquiryResponse {
     private String title;
     private String description;
     private String category;
+    private String deliveryLocation;
+    private String termsAndConditions;
     private String clientId;
     private InquiryStatus status;
     private Instant deadline;

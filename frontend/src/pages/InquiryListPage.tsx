@@ -31,6 +31,8 @@ function CreateModal({ onClose, onCreated }: CreateModalProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [deliveryLocation, setDeliveryLocation] = useState('');
+  const [termsAndConditions, setTermsAndConditions] = useState('');
   const [deadline, setDeadline] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -44,6 +46,8 @@ function CreateModal({ onClose, onCreated }: CreateModalProps) {
         title,
         description,
         category,
+        deliveryLocation: deliveryLocation || undefined,
+        termsAndConditions: termsAndConditions || undefined,
         deadline: new Date(deadline).toISOString(),
       });
       onCreated(created);
@@ -91,6 +95,28 @@ function CreateModal({ onClose, onCreated }: CreateModalProps) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Szczegółowy opis przedmiotu zapytania…"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Miejsce realizacji</label>
+            <input
+              type="text"
+              value={deliveryLocation}
+              onChange={(e) => setDeliveryLocation(e.target.value)}
+              placeholder="np. Warszawa, ul. Przykładowa 1"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Warunki realizacji i płatności</label>
+            <textarea
+              rows={2}
+              value={termsAndConditions}
+              onChange={(e) => setTermsAndConditions(e.target.value)}
+              placeholder="np. Płatność 30 dni od dostawy, gwarancja 12 miesięcy…"
               className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
             />
           </div>
