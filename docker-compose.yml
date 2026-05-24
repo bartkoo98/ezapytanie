@@ -33,6 +33,19 @@ services:
     networks:
       - ezapytanie-net
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ezapytanie-ui
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - ezapytanie-net
+
   mongo-express:
     image: mongo-express:1.0.2
     container_name: ezapytanie-mongo-express

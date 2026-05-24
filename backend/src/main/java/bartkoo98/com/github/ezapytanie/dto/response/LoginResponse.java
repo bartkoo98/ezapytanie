@@ -20,4 +20,6 @@ public class LoginResponse {
     private long expiresIn;  // seconds until access token expires
     private String email;
     private String role;
+    private String fullName;
+    private String institutionName;
 }

@@ -57,7 +57,7 @@ public class InquiryService {
                 userAgent
         );
 
-        return toResponse(saved);
+        return toResponse(saved, true);
     }
 
     public List<InquiryResponse> list() {
@@ -66,10 +66,12 @@ public class InquiryService {
         List<Inquiry> inquiries = switch (principal.getUserRole()) {
             case ADMIN -> inquiryRepository.findAll();
             case CLIENT -> inquiryRepository.findByClientId(principal.getUserId());
-            case CONTRACTOR -> inquiryRepository.findByStatus(InquiryStatus.PUBLISHED);
+            case CONTRACTOR -> inquiryRepository.findByStatusIn(
+                    List.of(InquiryStatus.PUBLISHED, InquiryStatus.CLOSED, InquiryStatus.ARCHIVED));
         };
 
-        return inquiries.stream().map(this::toResponse).toList();
+        boolean includeJustification = principal.getUserRole() != UserRole.CONTRACTOR;
+        return inquiries.stream().map(i -> toResponse(i, includeJustification)).toList();
     }
 
     public InquiryResponse getById(String inquiryId) {
@@ -86,13 +88,13 @@ public class InquiryService {
                 }
             }
             case CONTRACTOR -> {
-                if (inquiry.getStatus() != InquiryStatus.PUBLISHED) {
+                if (inquiry.getStatus() == InquiryStatus.CANCELLED) {
                     throw new AccessDeniedException("Inquiry is not available: " + inquiryId);
                 }
             }
         }
 
-        return toResponse(inquiry);
+        return toResponse(inquiry, principal.getUserRole() != UserRole.CONTRACTOR);
     }
 
     @Transactional
@@ -134,19 +136,11 @@ public class InquiryService {
                 userAgent
         );
 
-        return toResponse(saved);
+        return toResponse(saved, true);
     }
 
-    /**
-     * Accepts one offer, batch-rejects all others, and closes the inquiry atomically.
-     *
-     * Requires MongoDB replica-set mode for true atomicity (@Transactional).
-     * Ownership is verified here — @PostAuthorize is wrong for writes because it
-     * runs after the mutation; @PreAuthorize cannot access the inquiry's clientId
-     * without an extra query, so the check belongs in the service.
-     */
     @Transactional
-    public InquiryResponse acceptOffer(String inquiryId, String offerId,
+    public InquiryResponse acceptOffer(String inquiryId, String offerId, String selectionJustification,
                                        String ipAddress, String userAgent) {
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
@@ -157,8 +151,8 @@ public class InquiryService {
             throw new AccessDeniedException("You are not the owner of inquiry: " + inquiryId);
         }
 
-        if (inquiry.getStatus() != InquiryStatus.PUBLISHED) {
-            throw new InvalidInquiryStateException(inquiryId, inquiry.getStatus(), InquiryStatus.PUBLISHED);
+        if (inquiry.getStatus() != InquiryStatus.CLOSED) {
+            throw new InvalidInquiryStateException(inquiryId, inquiry.getStatus(), InquiryStatus.CLOSED);
         }
 
         Offer offer = offerRepository.findById(offerId)
@@ -178,8 +172,9 @@ public class InquiryService {
         otherOffers.forEach(o -> o.setStatus(OfferStatus.REJECTED));
         offerRepository.saveAll(otherOffers);
 
-        inquiry.setStatus(InquiryStatus.CLOSED);
+        inquiry.setStatus(InquiryStatus.ARCHIVED);
         inquiry.setWinnerOfferId(offerId);
+        inquiry.setSelectionJustification(selectionJustification);
         Inquiry saved = inquiryRepository.save(inquiry);
 
         String actorId = principal.getUserId();
@@ -195,13 +190,13 @@ public class InquiryService {
 
         auditLogService.log(
                 actorId, actorRole, actorEmail,
-                "INQUIRY_CLOSED", "INQUIRY", inquiryId,
+                "INQUIRY_ARCHIVED", "INQUIRY", inquiryId,
                 Map.of("winnerOfferId", offerId,
                         "rejectedOfferCount", String.valueOf(otherOffers.size())),
                 ipAddress, userAgent
         );
 
-        return toResponse(saved);
+        return toResponse(saved, true);
     }
 
     private CustomUserDetails getCurrentPrincipal() {
@@ -209,7 +204,7 @@ public class InquiryService {
         return (CustomUserDetails) auth.getPrincipal();
     }
 
-    private InquiryResponse toResponse(Inquiry inquiry) {
+    private InquiryResponse toResponse(Inquiry inquiry, boolean includeJustification) {
         return InquiryResponse.builder()
                 .id(inquiry.getId())
                 .title(inquiry.getTitle())
@@ -218,9 +213,9 @@ public class InquiryService {
                 .clientId(inquiry.getClientId())
                 .status(inquiry.getStatus())
                 .deadline(inquiry.getDeadline())
-                .invitedContractorIds(inquiry.getInvitedContractorIds())
                 .winnerOfferId(inquiry.getWinnerOfferId())
                 .cancellationReason(inquiry.getCancellationReason())
+                .selectionJustification(includeJustification ? inquiry.getSelectionJustification() : null)
                 .createdAt(inquiry.getCreatedAt())
                 .updatedAt(inquiry.getUpdatedAt())
                 .build();

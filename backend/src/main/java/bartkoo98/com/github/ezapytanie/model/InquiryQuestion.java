@@ -1,48 +1,36 @@
 package bartkoo98.com.github.ezapytanie.model;
 
-import bartkoo98.com.github.ezapytanie.enums.InquiryStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
-@Document(collection = "inquiries")
+@Document(collection = "inquiry_questions")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Inquiry {
+public class InquiryQuestion {
 
     @Id
     private String id;
 
-    private String title;
-    private String description;
-    private String category;
-
     @Indexed
-    private String clientId;
+    private String inquiryId;
 
-    @Indexed
-    private InquiryStatus status;
+    private String authorId;
 
-    @Indexed
-    private Instant deadline;
-
-    private String winnerOfferId;
-    private String cancellationReason;
-    private String selectionJustification;
+    private String questionText;
+    private String answerText;
 
     @CreatedDate
     private Instant createdAt;
 
-    @LastModifiedDate
-    private Instant updatedAt;
+    private Instant answeredAt;
 }

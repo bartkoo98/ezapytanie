@@ -22,6 +22,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -54,7 +56,6 @@ public class OfferService {
                 .contractorName(principal.getFullName())
                 .price(request.getPrice())
                 .notes(request.getNotes())
-                .validUntil(request.getValidUntil())
                 .status(OfferStatus.SUBMITTED)
                 .build();
 
@@ -73,8 +74,7 @@ public class OfferService {
                 userAgent
         );
 
-        // Contractor always sees their own offer in full
-        return mapper.toResponse(saved, true);
+        return mapper.toResponse(saved, inquiry);
     }
 
     public List<OfferResponse> listForInquiry(String inquiryId) {
@@ -85,7 +85,7 @@ public class OfferService {
 
         return switch (principal.getUserRole()) {
             case ADMIN -> offerRepository.findByInquiryId(inquiryId).stream()
-                    .map(o -> mapper.toResponse(o, true))
+                    .map(o -> mapper.toResponse(o, true, inquiry.getTitle()))
                     .toList();
 
             case CLIENT -> {
@@ -99,10 +99,9 @@ public class OfferService {
             }
 
             case CONTRACTOR -> {
-                // Contractors see only their own offer, always in full
                 yield offerRepository.findByInquiryId(inquiryId).stream()
                         .filter(o -> o.getContractorId().equals(principal.getUserId()))
-                        .map(o -> mapper.toResponse(o, true))
+                        .map(o -> mapper.toResponse(o, true, inquiry.getTitle()))
                         .toList();
             }
         };
@@ -110,8 +109,12 @@ public class OfferService {
 
     public List<OfferResponse> listMine() {
         CustomUserDetails principal = getCurrentPrincipal();
-        return offerRepository.findByContractorId(principal.getUserId()).stream()
-                .map(o -> mapper.toResponse(o, true))
+        List<Offer> offers = offerRepository.findByContractorId(principal.getUserId());
+        Set<String> inquiryIds = offers.stream().map(Offer::getInquiryId).collect(Collectors.toSet());
+        Map<String, String> titleById = inquiryRepository.findAllById(inquiryIds).stream()
+                .collect(Collectors.toMap(Inquiry::getId, Inquiry::getTitle));
+        return offers.stream()
+                .map(o -> mapper.toResponse(o, true, titleById.getOrDefault(o.getInquiryId(), o.getInquiryId())))
                 .toList();
     }
 

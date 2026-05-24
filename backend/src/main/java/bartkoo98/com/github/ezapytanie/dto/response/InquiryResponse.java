@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
 
 @Data
 @Builder
@@ -22,9 +21,9 @@ public class InquiryResponse {
     private String clientId;
     private InquiryStatus status;
     private Instant deadline;
-    private List<String> invitedContractorIds;
     private String winnerOfferId;
     private String cancellationReason;
+    private String selectionJustification;
     private Instant createdAt;
     private Instant updatedAt;
 }

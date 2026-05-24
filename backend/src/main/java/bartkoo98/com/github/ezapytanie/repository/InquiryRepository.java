@@ -13,5 +13,7 @@ public interface InquiryRepository extends MongoRepository<Inquiry, String> {
 
     List<Inquiry> findByStatus(InquiryStatus status);
 
+    List<Inquiry> findByStatusIn(List<InquiryStatus> statuses);
+
     List<Inquiry> findByStatusAndDeadlineBefore(InquiryStatus status, Instant deadline);
 }

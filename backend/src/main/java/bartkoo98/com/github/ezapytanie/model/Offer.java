@@ -46,8 +46,6 @@ public class Offer {
 
     private String notes;
 
-    private Instant validUntil;
-
     private OfferStatus status;
 
     private String withdrawalReason;

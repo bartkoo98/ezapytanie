@@ -100,6 +100,8 @@ public class AuthService {
                 .expiresIn(jwtTokenProvider.getAccessTokenExpirationSeconds())
                 .email(user.getEmail())
                 .role(user.getRole().name())
+                .fullName(user.getFullName())
+                .institutionName(user.getInstitutionName())
                 .build();
     }
 }

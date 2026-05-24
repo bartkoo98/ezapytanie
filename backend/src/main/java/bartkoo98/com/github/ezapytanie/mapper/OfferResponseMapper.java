@@ -16,19 +16,19 @@ public class OfferResponseMapper {
 
     public OfferResponse toResponse(Offer offer, Inquiry inquiry) {
         boolean revealed = inquiry.getStatus() != InquiryStatus.PUBLISHED;
-        return toResponse(offer, revealed);
+        return toResponse(offer, revealed, inquiry.getTitle());
     }
 
-    public OfferResponse toResponse(Offer offer, boolean revealed) {
+    public OfferResponse toResponse(Offer offer, boolean revealed, String inquiryTitle) {
         return OfferResponse.builder()
                 .id(offer.getId())
                 .inquiryId(offer.getInquiryId())
+                .inquiryTitle(inquiryTitle)
                 .contractorId(offer.getContractorId())
                 .contractorName(revealed ? offer.getContractorName() : null)
                 .price(revealed ? offer.getPrice() : null)
                 .currency(revealed ? offer.getCurrency() : null)
                 .notes(revealed ? offer.getNotes() : null)
-                .validUntil(revealed ? offer.getValidUntil() : null)
                 .status(offer.getStatus())
                 .submittedAt(offer.getSubmittedAt())
                 .updatedAt(offer.getUpdatedAt())

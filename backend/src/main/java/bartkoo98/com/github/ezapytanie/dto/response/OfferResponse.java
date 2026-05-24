@@ -17,12 +17,12 @@ public class OfferResponse {
 
     private String id;
     private String inquiryId;
+    private String inquiryTitle;
     private String contractorId;
     private String contractorName;
     private BigDecimal price;
     private String currency;
     private String notes;
-    private Instant validUntil;
     private OfferStatus status;
     private Instant submittedAt;
     private Instant updatedAt;
