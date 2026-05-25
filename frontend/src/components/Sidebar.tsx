@@ -4,7 +4,7 @@ import {
   FileText,
   ReceiptText,
   Users,
-  ScrollText,
+  CircleUser,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import type { UserRole } from '../types/api';
@@ -21,7 +21,7 @@ const navItems: NavItem[] = [
   { icon: FileText, label: 'Zapytania', to: '/inquiries', roles: ['CLIENT', 'CONTRACTOR'] },
   { icon: ReceiptText, label: 'Moje oferty', to: '/offers', roles: ['CONTRACTOR'] },
   { icon: Users, label: 'Użytkownicy', to: '/admin/users', roles: ['ADMIN'] },
-  { icon: ScrollText, label: 'Logi audytowe', to: '/admin/audit-logs', roles: ['ADMIN'] },
+  { icon: CircleUser, label: 'Mój profil', to: '/profile', roles: ['CLIENT', 'CONTRACTOR'] },
 ];
 
 export default function Sidebar() {
