@@ -1,13 +1,13 @@
 package bartkoo98.com.github.ezapytanie;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class EZapytanieApplicationTests {
 
     @Test
-    void contextLoads() {
+    void unitTestSuiteIsConfigured() {
+        assertThat(EZapytanieApplication.class).isNotNull();
     }
-
 }

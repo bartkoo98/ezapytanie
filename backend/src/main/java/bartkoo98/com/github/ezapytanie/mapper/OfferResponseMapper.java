@@ -20,11 +20,6 @@ public class OfferResponseMapper {
         return toResponse(offer, revealed, inquiry.getTitle(), null);
     }
 
-    public OfferResponse toResponse(Offer offer, Inquiry inquiry, User contractor) {
-        boolean revealed = inquiry.getStatus() != InquiryStatus.PUBLISHED;
-        return toResponse(offer, revealed, inquiry.getTitle(), contractor);
-    }
-
     public OfferResponse toResponse(Offer offer, boolean revealed, String inquiryTitle) {
         return toResponse(offer, revealed, inquiryTitle, null);
     }
