@@ -6,8 +6,6 @@ import org.springframework.data.repository.Repository;
 import java.time.Instant;
 import java.util.List;
 
-// Extends bare Repository (not CrudRepository/MongoRepository) to enforce append-only access.
-// No delete or update methods are available — by design (NFR-AUD-01).
 public interface AuditLogRepository extends Repository<AuditLog, String> {
 
     AuditLog save(AuditLog auditLog);

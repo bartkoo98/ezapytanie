@@ -120,20 +120,6 @@ export interface UserResponse {
   lastLoginAt: string | null;
 }
 
-export interface AuditLog {
-  id: string;
-  timestamp: string;
-  actorId: string;
-  actorRole: string;
-  actorEmail: string;
-  action: string;
-  entityType: string;
-  entityId: string;
-  details: Record<string, unknown>;
-  ipAddress: string;
-  userAgent: string;
-}
-
 export interface PageResponse<T> {
   content: T[];
   page: number;

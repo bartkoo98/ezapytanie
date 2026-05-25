@@ -2,6 +2,7 @@ package bartkoo98.com.github.ezapytanie.service;
 
 import bartkoo98.com.github.ezapytanie.dto.request.SubmitOfferRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.OfferResponse;
+import bartkoo98.com.github.ezapytanie.service.AuditLogService;
 import bartkoo98.com.github.ezapytanie.enums.InquiryStatus;
 import bartkoo98.com.github.ezapytanie.enums.OfferStatus;
 import bartkoo98.com.github.ezapytanie.enums.UserRole;
@@ -41,9 +42,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/**
- * Unit tests for sealed-bid submission rules and role-based offer visibility.
- */
 @ExtendWith(MockitoExtension.class)
 class OfferServiceTest {
 
@@ -95,7 +93,6 @@ class OfferServiceTest {
 
     @Test
     void submit_whenInquiryPublishedAndNoDuplicate_savesOfferWithCorrectState() {
-        // Arrange
         mockPrincipal("contractor-1", "Jan Kowalski", UserRole.CONTRACTOR);
         Inquiry inquiry = publishedInquiry("inquiry-1", "client-1");
         Offer saved = submittedOffer("offer-1", "inquiry-1", "contractor-1");
@@ -106,10 +103,8 @@ class OfferServiceTest {
         when(offerRepository.save(any())).thenReturn(saved);
         when(mapper.toResponse(eq(saved), eq(inquiry))).thenReturn(expectedResponse);
 
-        // Act
-        OfferResponse result = offerService.submit(submitRequest("inquiry-1"), "127.0.0.1", "JUnit");
+        OfferResponse result = offerService.submit(submitRequest("inquiry-1"));
 
-        // Assert
         assertThat(result.getId()).isEqualTo("offer-1");
 
         ArgumentCaptor<Offer> captor = ArgumentCaptor.forClass(Offer.class);
@@ -122,12 +117,10 @@ class OfferServiceTest {
 
     @Test
     void submit_whenInquiryNotPublished_throwsInquiryNotOpenException() {
-        // Arrange — principal not needed: exception thrown before getCurrentPrincipal()
         Inquiry closed = Inquiry.builder().id("inquiry-1").status(InquiryStatus.CLOSED).clientId("client-1").build();
         when(inquiryRepository.findById("inquiry-1")).thenReturn(Optional.of(closed));
 
-        // Act & Assert
-        assertThatThrownBy(() -> offerService.submit(submitRequest("inquiry-1"), "127.0.0.1", "JUnit"))
+        assertThatThrownBy(() -> offerService.submit(submitRequest("inquiry-1")))
                 .isInstanceOf(InquiryNotOpenException.class)
                 .hasMessageContaining("inquiry-1");
 
@@ -136,13 +129,11 @@ class OfferServiceTest {
 
     @Test
     void submit_whenDuplicateOffer_throwsDuplicateOfferException() {
-        // Arrange
         mockPrincipal("contractor-1", "Jan Kowalski", UserRole.CONTRACTOR);
         when(inquiryRepository.findById("inquiry-1")).thenReturn(Optional.of(publishedInquiry("inquiry-1", "client-1")));
         when(offerRepository.existsByInquiryIdAndContractorId("inquiry-1", "contractor-1")).thenReturn(true);
 
-        // Act & Assert
-        assertThatThrownBy(() -> offerService.submit(submitRequest("inquiry-1"), "127.0.0.1", "JUnit"))
+        assertThatThrownBy(() -> offerService.submit(submitRequest("inquiry-1")))
                 .isInstanceOf(DuplicateOfferException.class)
                 .hasMessageContaining("inquiry-1");
 
@@ -151,7 +142,6 @@ class OfferServiceTest {
 
     @Test
     void listForInquiry_asClientOwner_whenPublished_requestsMaskedMapping() {
-        // Arrange — CLIENT is the owner, inquiry is still PUBLISHED (sealed)
         mockPrincipal("client-1", "Anna Nowak", UserRole.CLIENT);
         Inquiry inquiry = publishedInquiry("inquiry-1", "client-1");
         Offer offer = submittedOffer("offer-1", "inquiry-1", "contractor-1");
@@ -161,18 +151,15 @@ class OfferServiceTest {
         when(offerRepository.findByInquiryId("inquiry-1")).thenReturn(List.of(offer));
         when(mapper.toResponse(eq(offer), eq(false), eq("Dostawa materiałów"), isNull())).thenReturn(masked);
 
-        // Act
         List<OfferResponse> result = offerService.listForInquiry("inquiry-1");
 
-        // Assert
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getPrice()).isNull();
-        verify(userRepository, never()).findAllById(any()); // no contractor lookup while sealed
+        verify(userRepository, never()).findAllById(any());
     }
 
     @Test
     void listForInquiry_asClientOwner_whenClosed_revealsOffersAndLooksUpContractors() {
-        // Arrange — inquiry is CLOSED, bids are now revealed
         mockPrincipal("client-1", "Anna Nowak", UserRole.CLIENT);
         Inquiry closed = Inquiry.builder().id("inquiry-1").title("Dostawa materiałów")
                 .status(InquiryStatus.CLOSED).clientId("client-1").build();
@@ -185,29 +172,24 @@ class OfferServiceTest {
         when(userRepository.findAllById(any())).thenReturn(List.of(contractor));
         when(mapper.toResponse(eq(offer), eq(true), eq("Dostawa materiałów"), eq(contractor))).thenReturn(revealed);
 
-        // Act
         List<OfferResponse> result = offerService.listForInquiry("inquiry-1");
 
-        // Assert
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getPrice()).isEqualByComparingTo("5000.00");
-        verify(userRepository).findAllById(any()); // contractor profile fetched
+        verify(userRepository).findAllById(any());
     }
 
     @Test
     void listForInquiry_asClientNonOwner_throwsAccessDeniedException() {
-        // Arrange — different client tries to read another client's inquiry offers
         mockPrincipal("other-client", "Ktoś Inny", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1")).thenReturn(Optional.of(publishedInquiry("inquiry-1", "client-1")));
 
-        // Act & Assert
         assertThatThrownBy(() -> offerService.listForInquiry("inquiry-1"))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void listForInquiry_asContractor_routesOwnOfferToRevealAndCompetitorsToMask() {
-        // Arrange — two offers: one belongs to the caller, one to a competitor
         mockPrincipal("contractor-1", "Jan Kowalski", UserRole.CONTRACTOR);
         Inquiry inquiry = publishedInquiry("inquiry-1", "client-1");
         Offer myOffer = submittedOffer("offer-1", "inquiry-1", "contractor-1");
@@ -220,14 +202,12 @@ class OfferServiceTest {
         when(mapper.toResponse(eq(myOffer), eq(true), eq("Dostawa materiałów"))).thenReturn(ownRevealed);
         when(mapper.toMaskedCompetitorResponse(eq(competitorOffer), eq("Dostawa materiałów"))).thenReturn(competitorMasked);
 
-        // Act
         List<OfferResponse> result = offerService.listForInquiry("inquiry-1");
 
-        // Assert — both offers returned (competitor is visible but masked)
         assertThat(result).hasSize(2);
-        assertThat(result.get(0).getPrice()).isEqualByComparingTo("5000.00"); // own offer revealed
-        assertThat(result.get(1).getContractorId()).isNull();                  // competitor identity hidden
-        assertThat(result.get(1).getPrice()).isNull();                          // competitor price hidden
+        assertThat(result.get(0).getPrice()).isEqualByComparingTo("5000.00");
+        assertThat(result.get(1).getContractorId()).isNull();
+        assertThat(result.get(1).getPrice()).isNull();
 
         verify(mapper).toResponse(eq(myOffer), eq(true), eq("Dostawa materiałów"));
         verify(mapper).toMaskedCompetitorResponse(eq(competitorOffer), eq("Dostawa materiałów"));

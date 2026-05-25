@@ -25,11 +25,7 @@ public class AuthService {
     private final AuditLogService auditLogService;
     private final JwtTokenProvider jwtTokenProvider;
 
-    /**
-     * Registers a new user account. Throws {@link EmailAlreadyExistsException} if
-     * the email is already taken (caller should map this to HTTP 409).
-     */
-    public User register(RegisterRequest request, String ipAddress, String userAgent) {
+    public User register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new EmailAlreadyExistsException(request.getEmail());
         }
@@ -55,26 +51,15 @@ public class AuthService {
         User saved = userRepository.save(user);
 
         auditLogService.log(
-                saved.getId(),
-                saved.getRole().name(),
-                saved.getEmail(),
-                "USER_REGISTERED",
-                "USER",
-                saved.getId(),
-                Map.of("fullName", saved.getFullName(), "institutionName", saved.getInstitutionName()),
-                ipAddress,
-                userAgent
+                saved.getId(), saved.getRole().name(), saved.getEmail(),
+                "USER_REGISTERED", "USER", saved.getId(),
+                Map.of("fullName", saved.getFullName(), "institutionName", saved.getInstitutionName())
         );
 
         return saved;
     }
 
-    /**
-     * Authenticates a user and returns JWT access and refresh tokens.
-     * Throws {@link InvalidCredentialsException} for any credential mismatch
-     * (intentionally generic to avoid email enumeration).
-     */
-    public LoginResponse login(LoginRequest request, String ipAddress, String userAgent) {
+    public LoginResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(InvalidCredentialsException::new);
 
@@ -93,15 +78,9 @@ public class AuthService {
         String refreshToken = jwtTokenProvider.generateRefreshToken(user);
 
         auditLogService.log(
-                user.getId(),
-                user.getRole().name(),
-                user.getEmail(),
-                "USER_LOGIN_SUCCESS",
-                "USER",
-                user.getId(),
-                null,
-                ipAddress,
-                userAgent
+                user.getId(), user.getRole().name(), user.getEmail(),
+                "USER_LOGIN_SUCCESS", "USER", user.getId(),
+                null
         );
 
         return LoginResponse.builder()

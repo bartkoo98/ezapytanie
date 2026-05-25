@@ -7,11 +7,6 @@ import bartkoo98.com.github.ezapytanie.model.Offer;
 import bartkoo98.com.github.ezapytanie.model.User;
 import org.springframework.stereotype.Component;
 
-/**
- * Single source of truth for offer visibility.
- * Price, contractor identity, and offer details are masked while the inquiry is PUBLISHED.
- * Once the inquiry moves to any other status the bids are considered revealed.
- */
 @Component
 public class OfferResponseMapper {
 

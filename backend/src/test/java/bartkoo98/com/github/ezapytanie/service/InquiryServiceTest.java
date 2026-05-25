@@ -2,6 +2,7 @@ package bartkoo98.com.github.ezapytanie.service;
 
 import bartkoo98.com.github.ezapytanie.dto.request.CancelInquiryRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.InquiryResponse;
+import bartkoo98.com.github.ezapytanie.service.AuditLogService;
 import bartkoo98.com.github.ezapytanie.enums.InquiryStatus;
 import bartkoo98.com.github.ezapytanie.enums.OfferStatus;
 import bartkoo98.com.github.ezapytanie.enums.UserRole;
@@ -81,7 +82,6 @@ class InquiryServiceTest {
 
     @Test
     void cancel_asOwner_whenPublished_changesStatusAndRejectsSubmittedOffers() {
-        // Arrange
         mockPrincipal("client-1", UserRole.CLIENT);
         Inquiry published = inquiry("inquiry-1", "client-1", InquiryStatus.PUBLISHED);
         Offer submitted = offer("offer-1", "inquiry-1", OfferStatus.SUBMITTED);
@@ -91,10 +91,8 @@ class InquiryServiceTest {
         when(offerRepository.findByInquiryId("inquiry-1")).thenReturn(List.of(submitted, withdrawn));
         when(inquiryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act
-        InquiryResponse result = inquiryService.cancel("inquiry-1", cancelRequest(), "127.0.0.1", "JUnit");
+        InquiryResponse result = inquiryService.cancel("inquiry-1", cancelRequest());
 
-        // Assert
         assertThat(result.getStatus()).isEqualTo(InquiryStatus.CANCELLED);
         assertThat(result.getCancellationReason()).isEqualTo("Zmiana planów zakupowych");
 
@@ -108,7 +106,6 @@ class InquiryServiceTest {
 
     @Test
     void cancel_onlyRejectsSubmittedOffers_notAlreadyWithdrawn() {
-        // Arrange — already-withdrawn offer must not be touched
         mockPrincipal("client-1", UserRole.CLIENT);
         Inquiry published = inquiry("inquiry-1", "client-1", InquiryStatus.PUBLISHED);
         Offer withdrawn = offer("offer-w", "inquiry-1", OfferStatus.WITHDRAWN);
@@ -117,10 +114,8 @@ class InquiryServiceTest {
         when(offerRepository.findByInquiryId("inquiry-1")).thenReturn(List.of(withdrawn));
         when(inquiryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act
-        inquiryService.cancel("inquiry-1", cancelRequest(), "127.0.0.1", "JUnit");
+        inquiryService.cancel("inquiry-1", cancelRequest());
 
-        // Assert — saveAll called with empty list (nothing to reject)
         ArgumentCaptor<List<Offer>> savedOffers = ArgumentCaptor.forClass(List.class);
         verify(offerRepository).saveAll(savedOffers.capture());
         assertThat(savedOffers.getValue()).isEmpty();
@@ -129,13 +124,11 @@ class InquiryServiceTest {
 
     @Test
     void cancel_asNonOwner_throwsAccessDeniedException() {
-        // Arrange
         mockPrincipal("other-client", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(inquiry("inquiry-1", "client-1", InquiryStatus.PUBLISHED)));
 
-        // Act & Assert
-        assertThatThrownBy(() -> inquiryService.cancel("inquiry-1", cancelRequest(), "127.0.0.1", "JUnit"))
+        assertThatThrownBy(() -> inquiryService.cancel("inquiry-1", cancelRequest()))
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(inquiryRepository, never()).save(any());
@@ -143,13 +136,11 @@ class InquiryServiceTest {
 
     @Test
     void cancel_asOwner_whenNotPublished_throwsInvalidInquiryStateException() {
-        // Arrange — already-closed inquiry cannot be cancelled
         mockPrincipal("client-1", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(inquiry("inquiry-1", "client-1", InquiryStatus.CLOSED)));
 
-        // Act & Assert
-        assertThatThrownBy(() -> inquiryService.cancel("inquiry-1", cancelRequest(), "127.0.0.1", "JUnit"))
+        assertThatThrownBy(() -> inquiryService.cancel("inquiry-1", cancelRequest()))
                 .isInstanceOf(InvalidInquiryStateException.class)
                 .hasMessageContaining("inquiry-1");
 
@@ -158,7 +149,6 @@ class InquiryServiceTest {
 
     @Test
     void acceptOffer_asOwner_whenClosed_archivesInquiryAndSelectsWinner() {
-        // Arrange
         mockPrincipal("client-1", UserRole.CLIENT);
         Inquiry closed = inquiry("inquiry-1", "client-1", InquiryStatus.CLOSED);
         Offer winner = offer("offer-1", "inquiry-1", OfferStatus.SUBMITTED);
@@ -169,17 +159,13 @@ class InquiryServiceTest {
         when(offerRepository.findByInquiryId("inquiry-1")).thenReturn(List.of(winner, loser));
         when(inquiryRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act
-        InquiryResponse result = inquiryService.acceptOffer(
-                "inquiry-1", "offer-1", "Najlepsza cena", "127.0.0.1", "JUnit");
+        InquiryResponse result = inquiryService.acceptOffer("inquiry-1", "offer-1", "Najlepsza cena");
 
-        // Assert — inquiry archived, winner selected
         assertThat(result.getStatus()).isEqualTo(InquiryStatus.ARCHIVED);
         assertThat(result.getWinnerOfferId()).isEqualTo("offer-1");
         assertThat(result.getSelectionJustification()).isEqualTo("Najlepsza cena");
         assertThat(winner.getStatus()).isEqualTo(OfferStatus.SELECTED);
 
-        // Losing offer must be rejected
         ArgumentCaptor<List<Offer>> savedOthers = ArgumentCaptor.forClass(List.class);
         verify(offerRepository).saveAll(savedOthers.capture());
         assertThat(savedOthers.getValue()).hasSize(1);
@@ -188,14 +174,11 @@ class InquiryServiceTest {
 
     @Test
     void acceptOffer_asOwner_whenNotClosed_throwsInvalidInquiryStateException() {
-        // Arrange — inquiry must be CLOSED, not PUBLISHED, to accept an offer
         mockPrincipal("client-1", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(inquiry("inquiry-1", "client-1", InquiryStatus.PUBLISHED)));
 
-        // Act & Assert
-        assertThatThrownBy(() -> inquiryService.acceptOffer(
-                "inquiry-1", "offer-1", "Uzasadnienie", "127.0.0.1", "JUnit"))
+        assertThatThrownBy(() -> inquiryService.acceptOffer("inquiry-1", "offer-1", "Uzasadnienie"))
                 .isInstanceOf(InvalidInquiryStateException.class)
                 .hasMessageContaining("inquiry-1");
 
@@ -204,19 +187,16 @@ class InquiryServiceTest {
 
     @Test
     void getById_asContractor_whenCancelled_throwsAccessDeniedException() {
-        // Arrange — CONTRACTOR must not see cancelled inquiries
         mockPrincipal("contractor-1", UserRole.CONTRACTOR);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(inquiry("inquiry-1", "client-1", InquiryStatus.CANCELLED)));
 
-        // Act & Assert
         assertThatThrownBy(() -> inquiryService.getById("inquiry-1"))
                 .isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void getById_asContractor_whenArchived_masksSelectionJustification() {
-        // Arrange — CONTRACTOR may see ARCHIVED inquiry but justification must be null
         mockPrincipal("contractor-1", UserRole.CONTRACTOR);
         Inquiry archived = Inquiry.builder()
                 .id("inquiry-1").title("Dostawa").clientId("client-1")
@@ -226,10 +206,8 @@ class InquiryServiceTest {
                 .build();
         when(inquiryRepository.findById("inquiry-1")).thenReturn(Optional.of(archived));
 
-        // Act
         InquiryResponse result = inquiryService.getById("inquiry-1");
 
-        // Assert — sensitive justification hidden from contractor
         assertThat(result.getSelectionJustification()).isNull();
         assertThat(result.getWinnerOfferId()).isEqualTo("offer-1");
     }

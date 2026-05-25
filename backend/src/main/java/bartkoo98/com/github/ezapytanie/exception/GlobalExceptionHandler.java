@@ -48,7 +48,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(403).body(new ErrorResponse("FORBIDDEN", "Access denied"));
     }
 
-    // Catch-all: never leak stack traces to the client
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneral(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception on {}: {}", request.getRequestURI(), ex.getMessage(), ex);

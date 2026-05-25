@@ -25,19 +25,17 @@ public class AuditLog {
     private Instant timestamp;
 
     @Indexed
-    private String actorId;     // ObjectId or "SYSTEM"
+    private String actorId;      // userId lub "SYSTEM"
     private String actorRole;
     private String actorEmail;
 
     @Indexed
-    private String action;      // e.g. USER_REGISTERED, INQUIRY_CREATED, OFFER_SUBMITTED
+    private String action;       // np. INQUIRY_CREATED, OFFER_SUBMITTED, USER_REGISTERED
 
-    private String entityType;  // USER, INQUIRY, OFFER, SYSTEM
+    private String entityType;   // USER, INQUIRY, OFFER
 
     @Indexed
     private String entityId;
 
     private Map<String, Object> details;
-    private String ipAddress;
-    private String userAgent;
 }

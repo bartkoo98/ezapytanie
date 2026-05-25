@@ -36,15 +36,9 @@ public class DeadlineSchedulerService {
             inquiryRepository.save(inquiry);
 
             auditLogService.log(
-                    "SYSTEM",
-                    "SYSTEM",
-                    "system",
-                    "AUTO_CLOSED",
-                    "INQUIRY",
-                    inquiry.getId(),
-                    Map.of("deadline", inquiry.getDeadline().toString()),
-                    null,
-                    null
+                    "SYSTEM", "SYSTEM", "system",
+                    "AUTO_CLOSED", "INQUIRY", inquiry.getId(),
+                    Map.of("deadline", inquiry.getDeadline().toString())
             );
         }
     }

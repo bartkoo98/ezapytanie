@@ -75,7 +75,6 @@ class InquiryQuestionServiceTest {
 
     @Test
     void ask_whenInquiryPublished_savesQuestionWithAuthorId() {
-        // Arrange
         mockPrincipal("contractor-1", UserRole.CONTRACTOR);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(publishedInquiry("inquiry-1", "client-1")));
@@ -85,10 +84,8 @@ class InquiryQuestionServiceTest {
                 .build();
         when(questionRepository.save(any())).thenReturn(saved);
 
-        // Act
         InquiryQuestionResponse result = questionService.ask("inquiry-1", askRequest("Jaki jest termin dostawy?"));
 
-        // Assert — question persisted with correct author
         assertThat(result.getId()).isEqualTo("q-1");
 
         ArgumentCaptor<InquiryQuestion> captor = ArgumentCaptor.forClass(InquiryQuestion.class);
@@ -100,12 +97,10 @@ class InquiryQuestionServiceTest {
 
     @Test
     void ask_whenInquiryNotPublished_throwsAccessDeniedException() {
-        // Arrange — principal not needed: exception thrown before getCurrentPrincipal()
         Inquiry closed = Inquiry.builder().id("inquiry-1").clientId("client-1")
                 .status(InquiryStatus.CLOSED).build();
         when(inquiryRepository.findById("inquiry-1")).thenReturn(Optional.of(closed));
 
-        // Act & Assert
         assertThatThrownBy(() -> questionService.ask("inquiry-1", askRequest("Pytanie")))
                 .isInstanceOf(AccessDeniedException.class);
 
@@ -114,10 +109,8 @@ class InquiryQuestionServiceTest {
 
     @Test
     void ask_whenInquiryNotFound_throwsResourceNotFoundException() {
-        // Arrange — principal not needed: exception thrown before getCurrentPrincipal()
         when(inquiryRepository.findById("missing")).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThatThrownBy(() -> questionService.ask("missing", askRequest("Pytanie")))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("missing");
@@ -125,10 +118,8 @@ class InquiryQuestionServiceTest {
         verify(questionRepository, never()).save(any());
     }
 
-
     @Test
     void answer_asOwner_setsAnswerTextAndTimestamp() {
-        // Arrange
         mockPrincipal("client-1", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(publishedInquiry("inquiry-1", "client-1")));
@@ -138,10 +129,8 @@ class InquiryQuestionServiceTest {
         when(questionRepository.findById("q-1")).thenReturn(Optional.of(question));
         when(questionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        // Act
         questionService.answer("inquiry-1", "q-1", answerRequest("Odpowiedź właściciela"));
 
-        // Assert — answer text set, timestamp populated
         ArgumentCaptor<InquiryQuestion> captor = ArgumentCaptor.forClass(InquiryQuestion.class);
         verify(questionRepository).save(captor.capture());
         InquiryQuestion persisted = captor.getValue();
@@ -151,12 +140,10 @@ class InquiryQuestionServiceTest {
 
     @Test
     void answer_asNonOwner_throwsAccessDeniedException() {
-        // Arrange — a different client tries to answer
         mockPrincipal("other-client", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(publishedInquiry("inquiry-1", "client-1")));
 
-        // Act & Assert
         assertThatThrownBy(() -> questionService.answer("inquiry-1", "q-1", answerRequest("Odpowiedź")))
                 .isInstanceOf(AccessDeniedException.class);
 
@@ -165,7 +152,6 @@ class InquiryQuestionServiceTest {
 
     @Test
     void answer_whenQuestionBelongsToDifferentInquiry_throwsResourceNotFoundException() {
-        // Arrange — question exists but is tied to a different inquiry
         mockPrincipal("client-1", UserRole.CLIENT);
         when(inquiryRepository.findById("inquiry-1"))
                 .thenReturn(Optional.of(publishedInquiry("inquiry-1", "client-1")));
@@ -174,7 +160,6 @@ class InquiryQuestionServiceTest {
                 .build();
         when(questionRepository.findById("q-1")).thenReturn(Optional.of(mismatch));
 
-        // Act & Assert
         assertThatThrownBy(() -> questionService.answer("inquiry-1", "q-1", answerRequest("Odpowiedź")))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("q-1");

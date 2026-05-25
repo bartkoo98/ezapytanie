@@ -12,7 +12,6 @@ import bartkoo98.com.github.ezapytanie.dto.response.PageResponse;
 import bartkoo98.com.github.ezapytanie.service.InquiryQuestionService;
 import bartkoo98.com.github.ezapytanie.service.InquiryService;
 import bartkoo98.com.github.ezapytanie.service.OfferService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -42,16 +41,8 @@ public class InquiryController {
 
     @PostMapping
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<InquiryResponse> create(
-            @Valid @RequestBody CreateInquiryRequest request,
-            HttpServletRequest httpRequest) {
-
-        InquiryResponse created = inquiryService.create(
-                request,
-                httpRequest.getRemoteAddr(),
-                httpRequest.getHeader("User-Agent")
-        );
-        return ResponseEntity.status(201).body(created);
+    public ResponseEntity<InquiryResponse> create(@Valid @RequestBody CreateInquiryRequest request) {
+        return ResponseEntity.status(201).body(inquiryService.create(request));
     }
 
     @GetMapping
@@ -73,16 +64,8 @@ public class InquiryController {
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<InquiryResponse> cancel(
             @PathVariable String inquiryId,
-            @Valid @RequestBody CancelInquiryRequest request,
-            HttpServletRequest httpRequest) {
-
-        InquiryResponse updated = inquiryService.cancel(
-                inquiryId,
-                request,
-                httpRequest.getRemoteAddr(),
-                httpRequest.getHeader("User-Agent")
-        );
-        return ResponseEntity.ok(updated);
+            @Valid @RequestBody CancelInquiryRequest request) {
+        return ResponseEntity.ok(inquiryService.cancel(inquiryId, request));
     }
 
     @GetMapping("/{inquiryId}/offers")
@@ -96,17 +79,9 @@ public class InquiryController {
     public ResponseEntity<InquiryResponse> acceptOffer(
             @PathVariable String inquiryId,
             @PathVariable String offerId,
-            @RequestBody AcceptOfferRequest request,
-            HttpServletRequest httpRequest) {
-
-        InquiryResponse updated = inquiryService.acceptOffer(
-                inquiryId,
-                offerId,
-                request.getSelectionJustification(),
-                httpRequest.getRemoteAddr(),
-                httpRequest.getHeader("User-Agent")
-        );
-        return ResponseEntity.ok(updated);
+            @RequestBody AcceptOfferRequest request) {
+        return ResponseEntity.ok(inquiryService.acceptOffer(
+                inquiryId, offerId, request.getSelectionJustification()));
     }
 
     @PostMapping("/{inquiryId}/questions")
@@ -114,7 +89,6 @@ public class InquiryController {
     public ResponseEntity<InquiryQuestionResponse> askQuestion(
             @PathVariable String inquiryId,
             @Valid @RequestBody AskQuestionRequest request) {
-
         return ResponseEntity.status(201).body(questionService.ask(inquiryId, request));
     }
 
@@ -124,7 +98,6 @@ public class InquiryController {
             @PathVariable String inquiryId,
             @PathVariable String questionId,
             @Valid @RequestBody AnswerQuestionRequest request) {
-
         return ResponseEntity.ok(questionService.answer(inquiryId, questionId, request));
     }
 

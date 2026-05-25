@@ -34,7 +34,7 @@ public class InquiryService {
     private final OfferRepository offerRepository;
     private final AuditLogService auditLogService;
 
-    public InquiryResponse create(CreateInquiryRequest request, String ipAddress, String userAgent) {
+    public InquiryResponse create(CreateInquiryRequest request) {
         CustomUserDetails principal = getCurrentPrincipal();
 
         Inquiry inquiry = Inquiry.builder()
@@ -51,15 +51,9 @@ public class InquiryService {
         Inquiry saved = inquiryRepository.save(inquiry);
 
         auditLogService.log(
-                principal.getUserId(),
-                principal.getUserRole().name(),
-                principal.getUsername(),
-                "INQUIRY_CREATED",
-                "INQUIRY",
-                saved.getId(),
-                Map.of("title", saved.getTitle(), "category", saved.getCategory()),
-                ipAddress,
-                userAgent
+                principal.getUserId(), principal.getUserRole().name(), principal.getUsername(),
+                "INQUIRY_CREATED", "INQUIRY", saved.getId(),
+                Map.of("title", saved.getTitle(), "category", saved.getCategory())
         );
 
         return toResponse(saved, true);
@@ -88,7 +82,7 @@ public class InquiryService {
         CustomUserDetails principal = getCurrentPrincipal();
 
         switch (principal.getUserRole()) {
-            case ADMIN -> { /* full access */ }
+            case ADMIN -> { }
             case CLIENT -> {
                 if (!inquiry.getClientId().equals(principal.getUserId())) {
                     throw new AccessDeniedException("You are not the owner of inquiry: " + inquiryId);
@@ -105,9 +99,7 @@ public class InquiryService {
     }
 
     @Transactional
-    public InquiryResponse cancel(String inquiryId, CancelInquiryRequest request,
-                                  String ipAddress, String userAgent) {
-
+    public InquiryResponse cancel(String inquiryId, CancelInquiryRequest request) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inquiry not found: " + inquiryId));
 
@@ -131,25 +123,17 @@ public class InquiryService {
         Inquiry saved = inquiryRepository.save(inquiry);
 
         auditLogService.log(
-                principal.getUserId(),
-                principal.getUserRole().name(),
-                principal.getUsername(),
-                "INQUIRY_CANCELLED",
-                "INQUIRY",
-                saved.getId(),
+                principal.getUserId(), principal.getUserRole().name(), principal.getUsername(),
+                "INQUIRY_CANCELLED", "INQUIRY", saved.getId(),
                 Map.of("reason", request.getCancellationReason(),
-                        "rejectedOfferCount", String.valueOf(submittedOffers.size())),
-                ipAddress,
-                userAgent
+                        "rejectedOfferCount", String.valueOf(submittedOffers.size()))
         );
 
         return toResponse(saved, true);
     }
 
     @Transactional
-    public InquiryResponse acceptOffer(String inquiryId, String offerId, String selectionJustification,
-                                       String ipAddress, String userAgent) {
-
+    public InquiryResponse acceptOffer(String inquiryId, String offerId, String selectionJustification) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new ResourceNotFoundException("Inquiry not found: " + inquiryId));
 
@@ -184,23 +168,16 @@ public class InquiryService {
         inquiry.setSelectionJustification(selectionJustification);
         Inquiry saved = inquiryRepository.save(inquiry);
 
-        String actorId = principal.getUserId();
-        String actorRole = principal.getUserRole().name();
-        String actorEmail = principal.getUsername();
-
         auditLogService.log(
-                actorId, actorRole, actorEmail,
+                principal.getUserId(), principal.getUserRole().name(), principal.getUsername(),
                 "OFFER_SELECTED", "OFFER", offerId,
-                Map.of("inquiryId", inquiryId, "selectedOfferId", offerId),
-                ipAddress, userAgent
+                Map.of("inquiryId", inquiryId, "selectedOfferId", offerId)
         );
-
         auditLogService.log(
-                actorId, actorRole, actorEmail,
+                principal.getUserId(), principal.getUserRole().name(), principal.getUsername(),
                 "INQUIRY_ARCHIVED", "INQUIRY", inquiryId,
                 Map.of("winnerOfferId", offerId,
-                        "rejectedOfferCount", String.valueOf(otherOffers.size())),
-                ipAddress, userAgent
+                        "rejectedOfferCount", String.valueOf(otherOffers.size()))
         );
 
         return toResponse(saved, true);

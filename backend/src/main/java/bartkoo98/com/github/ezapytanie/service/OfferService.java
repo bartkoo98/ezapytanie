@@ -4,7 +4,6 @@ import bartkoo98.com.github.ezapytanie.dto.request.SubmitOfferRequest;
 import bartkoo98.com.github.ezapytanie.dto.response.OfferResponse;
 import bartkoo98.com.github.ezapytanie.enums.InquiryStatus;
 import bartkoo98.com.github.ezapytanie.enums.OfferStatus;
-import bartkoo98.com.github.ezapytanie.enums.UserRole;
 import bartkoo98.com.github.ezapytanie.exception.DuplicateOfferException;
 import bartkoo98.com.github.ezapytanie.exception.InquiryNotOpenException;
 import bartkoo98.com.github.ezapytanie.exception.ResourceNotFoundException;
@@ -38,7 +37,7 @@ public class OfferService {
     private final AuditLogService auditLogService;
     private final OfferResponseMapper mapper;
 
-    public OfferResponse submit(SubmitOfferRequest request, String ipAddress, String userAgent) {
+    public OfferResponse submit(SubmitOfferRequest request) {
         Inquiry inquiry = inquiryRepository.findById(request.getInquiryId())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Inquiry not found: " + request.getInquiryId()));
@@ -66,16 +65,10 @@ public class OfferService {
         Offer saved = offerRepository.save(offer);
 
         auditLogService.log(
-                contractorId,
-                principal.getUserRole().name(),
-                principal.getUsername(),
-                "OFFER_SUBMITTED",
-                "OFFER",
-                saved.getId(),
+                contractorId, principal.getUserRole().name(), principal.getUsername(),
+                "OFFER_SUBMITTED", "OFFER", saved.getId(),
                 Map.of("inquiryId", request.getInquiryId(),
-                        "price", request.getPrice().toPlainString()),
-                ipAddress,
-                userAgent
+                        "price", request.getPrice().toPlainString())
         );
 
         return mapper.toResponse(saved, inquiry);

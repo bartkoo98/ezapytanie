@@ -7,7 +7,6 @@ import bartkoo98.com.github.ezapytanie.exception.EmailAlreadyExistsException;
 import bartkoo98.com.github.ezapytanie.exception.InvalidCredentialsException;
 import bartkoo98.com.github.ezapytanie.model.User;
 import bartkoo98.com.github.ezapytanie.service.AuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -26,23 +25,14 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, Object>> register(
-            @Valid @RequestBody RegisterRequest request,
-            HttpServletRequest httpRequest) {
-
+    public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequest request) {
         try {
-            User created = authService.register(
-                    request,
-                    httpRequest.getRemoteAddr(),
-                    httpRequest.getHeader("User-Agent")
-            );
-
+            User created = authService.register(request);
             return ResponseEntity.status(201).body(Map.of(
                     "id", created.getId(),
                     "email", created.getEmail(),
                     "role", created.getRole().name()
             ));
-
         } catch (EmailAlreadyExistsException ex) {
             return ResponseEntity.status(409).body(Map.of(
                     "code", "EMAIL_CONFLICT",
@@ -52,19 +42,10 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(
-            @Valid @RequestBody LoginRequest request,
-            HttpServletRequest httpRequest) {
-
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
-            LoginResponse response = authService.login(
-                    request,
-                    httpRequest.getRemoteAddr(),
-                    httpRequest.getHeader("User-Agent")
-            );
-
+            LoginResponse response = authService.login(request);
             return ResponseEntity.ok(response);
-
         } catch (InvalidCredentialsException ex) {
             return ResponseEntity.status(401).body(Map.of(
                     "code", "INVALID_CREDENTIALS",
