@@ -141,6 +141,12 @@ export interface PageResponse<T> {
   totalElements: number;
 }
 
+export interface UpdateProfileRequest {
+  fullName: string;
+  contactPhone: string;
+  address: string;
+}
+
 export interface ErrorResponse {
   code: string;
   message: string;

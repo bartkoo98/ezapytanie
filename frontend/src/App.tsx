@@ -9,7 +9,7 @@ import InquiryListPage from './pages/InquiryListPage';
 import InquiryDetailPage from './pages/InquiryDetailPage';
 import OffersPage from './pages/OffersPage';
 import AdminUsersPage from './pages/AdminUsersPage';
-import AdminAuditPage from './pages/AdminAuditPage';
+import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   return (
@@ -25,7 +25,7 @@ export default function App() {
               <Route path="/inquiries/:id" element={<InquiryDetailPage />} />
               <Route path="/offers" element={<OffersPage />} />
               <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/audit-logs" element={<AdminAuditPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
